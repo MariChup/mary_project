@@ -1,4 +1,4 @@
-package homework;
+package homework1;
 
 class Programmer {
     // TODO: Создать класс Programmer с полями:
