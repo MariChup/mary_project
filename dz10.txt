@@ -1,0 +1,129 @@
+-- 1. Создание базы данных
+CREATE DATABASE IF NOT EXISTS university_db;
+USE university_db;
+
+-- 2. Таблицы
+DROP TABLE IF EXISTS enrollments;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS courses;
+
+CREATE TABLE students (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    birth_date DATE NOT NULL,
+    group_name VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE courses (
+    course_id INT AUTO_INCREMENT PRIMARY KEY,
+    course_name VARCHAR(100) NOT NULL,
+    lecturer VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE enrollments (
+    enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    course_id INT NOT NULL,
+    grade DECIMAL(3,1) CHECK (grade >= 0 AND grade <= 10),
+    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE
+);
+
+-- 3. Вставка данных
+INSERT INTO students (first_name, last_name, birth_date, group_name) VALUES
+('Иван', 'Соломин', '2002-04-12', 'CS-21'),
+('Мария', 'Сидорова', '2003-07-23', 'CS-21'),
+('Антон', 'Ильин', '2001-11-02', 'DS-20'),
+('Екатерина', 'Морозова', '2002-01-18', 'IT-22'),
+('Дмитрий', 'Смирнов', '2003-02-27', 'IT-22'),
+('Ольга', 'Кузнецова', '2002-05-10', 'DS-20');
+
+INSERT INTO courses (course_name, lecturer) VALUES
+('Базы данных', 'Алексей Иванов'),
+('Программирование на Java', 'Светлана Ким'),
+('Анализ данных', 'Игорь Орлов'),
+('Компьютерные сети', 'Павел Никитин');
+
+INSERT INTO enrollments (student_id, course_id, grade) VALUES
+(1, 1, 9.5),
+(1, 2, 8.0),
+(2, 1, 7.0),
+(2, 3, 8.5),
+(3, 1, 9.0),
+(3, 3, 9.3),
+(4, 2, 8.8),
+(4, 4, 9.1),
+(5, 1, 6.5),
+(5, 2, 7.2),
+(6, 3, 8.9),
+(6, 4, 9.0);
+
+-- 4. Запросы SELECT
+
+-- Все студенты, отсортированные по фамилии
+SELECT * FROM students ORDER BY last_name;
+
+-- Студенты группы CS-21
+SELECT * FROM students WHERE group_name = 'CS-21';
+
+-- Список студентов и курсов, на которые они записаны
+SELECT s.first_name, s.last_name, c.course_name, e.grade
+FROM enrollments e
+JOIN students s ON e.student_id = s.student_id
+JOIN courses c ON e.course_id = c.course_id
+ORDER BY s.last_name;
+
+-- Средняя оценка по каждому курсу
+SELECT c.course_name, AVG(e.grade) AS avg_grade
+FROM enrollments e
+JOIN courses c ON e.course_id = c.course_id
+GROUP BY c.course_name;
+
+-- Курсы, где средняя оценка выше 8
+SELECT c.course_name, AVG(e.grade) AS avg_grade
+FROM enrollments e
+JOIN courses c ON e.course_id = c.course_id
+GROUP BY c.course_name
+HAVING AVG(e.grade) > 8;
+
+-- 5. Обновление и удаление данных
+
+-- Обновить фамилию одного студента
+UPDATE students SET last_name = 'Иванова' WHERE student_id = 1;
+
+-- Изменить оценку студента
+UPDATE enrollments SET grade = 9.8 WHERE enrollment_id = 2;
+
+-- Удалить одного студента и проверить каскадное удаление
+DELETE FROM students WHERE student_id = 5;
+
+
+SELECT * FROM enrollments WHERE student_id = 5;
+
+-- 6. Создание VIEW
+CREATE OR REPLACE VIEW student_course_view AS
+SELECT s.first_name, s.last_name, c.course_name, e.grade
+FROM enrollments e
+JOIN students s ON e.student_id = s.student_id
+JOIN courses c ON e.course_id = c.course_id;
+
+-- Вывести данные из представления, отсортированные по фамилии
+SELECT * FROM student_course_view ORDER BY last_name;
+
+-- 7. Дополнительные запросы
+
+-- Группы студентов со средней оценкой выше 8
+SELECT s.group_name, AVG(e.grade) AS avg_group_grade
+FROM enrollments e
+JOIN students s ON e.student_id = s.student_id
+GROUP BY s.group_name
+HAVING AVG(e.grade) > 8;
+
+-- Курс с максимальной средней оценкой
+SELECT c.course_name, AVG(e.grade) AS avg_grade
+FROM enrollments e
+JOIN courses c ON e.course_id = c.course_id
+GROUP BY c.course_name
+ORDER BY avg_grade DESC
+LIMIT 1;
